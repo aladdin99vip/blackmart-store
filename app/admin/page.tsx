@@ -20,7 +20,6 @@ export default function Admin() {
     image: "",
   });
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
 
   useEffect(() => {
     const saved = localStorage.getItem("products");
@@ -32,35 +31,35 @@ export default function Admin() {
           id: "1",
           name: "Wireless Headphones",
           price: 79.99,
-          image: "",
+          image: "/images/wireless-headphones.jpg",
           description: "High-quality wireless headphones with noise cancellation",
         },
         {
           id: "2",
           name: "Smart Watch",
           price: 199.99,
-          image: "",
+          image: "/images/smart-watch.jpg",
           description: "Feature-rich smartwatch with heart rate monitor",
         },
         {
           id: "3",
           name: "USB-C Cable",
           price: 12.99,
-          image: "",
+          image: "/images/usb-cable.jpg",
           description: "Durable 2-meter USB-C charging cable",
         },
         {
           id: "4",
           name: "Phone Case",
           price: 24.99,
-          image: "",
+          image: "/images/phone-case.jpg",
           description: "Protective phone case with premium materials",
         },
         {
           id: "5",
           name: "Screen Protector",
           price: 9.99,
-          image: "",
+          image: "/images/screen-protector.jpg",
           description: "Tempered glass screen protector - pack of 2",
         },
       ];
@@ -69,24 +68,11 @@ export default function Admin() {
     }
   }, []);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setImagePreview(base64);
-        setFormData({ ...formData, image: base64 });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.price || !formData.description) {
-      alert("Please fill in all fields");
+    if (!formData.name || !formData.price || !formData.description || !formData.image) {
+      alert("Please fill in all fields including image URL");
       return;
     }
 
@@ -98,7 +84,7 @@ export default function Admin() {
               name: formData.name,
               price: parseFloat(formData.price),
               description: formData.description,
-              image: formData.image || p.image,
+              image: formData.image,
             }
           : p
       );
@@ -118,7 +104,6 @@ export default function Admin() {
     }
 
     setFormData({ name: "", price: "", description: "", image: "" });
-    setImagePreview("");
     setEditingId(null);
   };
 
@@ -129,23 +114,18 @@ export default function Admin() {
       description: product.description,
       image: product.image,
     });
-    setImagePreview(product.image);
     setEditingId(product.id);
-    window.scrollTo(0, 0);
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this product?")) {
-      const updated = products.filter((p) => p.id !== id);
-      setProducts(updated);
-      localStorage.setItem("products", JSON.stringify(updated));
-    }
   };
 
   const handleCancel = () => {
     setFormData({ name: "", price: "", description: "", image: "" });
-    setImagePreview("");
     setEditingId(null);
+  };
+
+  const handleDelete = (id: string) => {
+    const updated = products.filter((p) => p.id !== id);
+    setProducts(updated);
+    localStorage.setItem("products", JSON.stringify(updated));
   };
 
   return (
@@ -213,23 +193,20 @@ export default function Admin() {
 
                 <div>
                   <label className="block text-sm font-medium text-emerald-200 mb-2">
-                    Product Image
+                    Image URL
                   </label>
                   <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="w-full px-3 py-2 border border-emerald-500/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600 text-emerald-200"
+                    type="text"
+                    value={formData.image}
+                    onChange={(e) =>
+                      setFormData({ ...formData, image: e.target.value })
+                    }
+                    placeholder="https://blackmart-store.vercel.app/images/filename.jpg"
+                    className="w-full px-3 py-2 border border-emerald-500/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600 text-white bg-gray-950 placeholder-emerald-300/40 text-sm"
                   />
-                  {imagePreview && (
-                    <div className="mt-3">
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-full h-32 object-cover rounded-lg"
-                      />
-                    </div>
-                  )}
+                  <p className="text-xs text-emerald-300/60 mt-2">
+                    Example: /images/laptop.jpg
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -280,10 +257,10 @@ export default function Admin() {
 
                   <div className="flex-1">
                     <h3 className="font-semibold text-white">{product.name}</h3>
-                    <p className="text-sm text-emerald-200/70 mb-2">
+                    <p className="text-sm text-emerald-100/70 mb-2">
                       ${product.price.toFixed(2)}
                     </p>
-                    <p className="text-sm text-emerald-200/70">{product.description}</p>
+                    <p className="text-sm text-emerald-100/70">{product.description}</p>
                   </div>
 
                   <div className="flex gap-2 flex-shrink-0">
