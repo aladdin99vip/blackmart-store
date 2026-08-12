@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/CartContext";
 
+export const dynamic = "force-dynamic";
+
 export default function Home() {
   const { addToCart, products } = useCart();
   const [addedProduct, setAddedProduct] = useState<string | null>(null);
