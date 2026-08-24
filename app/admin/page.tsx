@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 interface Product {
   id: string;
@@ -20,91 +21,85 @@ export default function Admin() {
     image: "",
   });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("products");
-    if (saved) {
-      setProducts(JSON.parse(saved));
-    } else {
-      const initial: Product[] = [
-        {
-          id: "1",
-          name: "Wireless Headphones",
-          price: 79.99,
-          image: "/images/wireless-headphones.jpg",
-          description: "High-quality wireless headphones with noise cancellation",
-        },
-        {
-          id: "2",
-          name: "Smart Watch",
-          price: 199.99,
-          image: "/images/smart-watch.jpg",
-          description: "Feature-rich smartwatch with heart rate monitor",
-        },
-        {
-          id: "3",
-          name: "USB-C Cable",
-          price: 12.99,
-          image: "/images/usb-cable.jpg",
-          description: "Durable 2-meter USB-C charging cable",
-        },
-        {
-          id: "4",
-          name: "Phone Case",
-          price: 24.99,
-          image: "/images/phone-case.jpg",
-          description: "Protective phone case with premium materials",
-        },
-        {
-          id: "5",
-          name: "Screen Protector",
-          price: 9.99,
-          image: "/images/screen-protector.jpg",
-          description: "Tempered glass screen protector - pack of 2",
-        },
-      ];
-      setProducts(initial);
-      localStorage.setItem("products", JSON.stringify(initial));
-    }
+    loadProducts();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const loadProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("id", { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        const formatted = data.map((p) => ({
+          id: p.id.toString(),
+          name: p.name,
+          price: p.price,
+          image: p.image || "",
+          description: p.description || "",
+        }));
+        setProducts(formatted);
+      }
+    } catch (error) {
+      console.error("Error loading products:", error);
+      alert("Error loading products");
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
     if (!formData.name || !formData.price || !formData.description || !formData.image) {
       alert("Please fill in all fields including image URL");
+      setLoading(false);
       return;
     }
 
-    if (editingId) {
-      const updated = products.map((p) =>
-        p.id === editingId
-          ? {
-              ...p,
-              name: formData.name,
-              price: parseFloat(formData.price),
-              description: formData.description,
-              image: formData.image,
-            }
-          : p
-      );
-      setProducts(updated);
-      localStorage.setItem("products", JSON.stringify(updated));
-    } else {
-      const newProduct: Product = {
-        id: Date.now().toString(),
-        name: formData.name,
-        price: parseFloat(formData.price),
-        description: formData.description,
-        image: formData.image,
-      };
-      const updated = [...products, newProduct];
-      setProducts(updated);
-      localStorage.setItem("products", JSON.stringify(updated));
+    try {
+      if (editingId) {
+        // Update existing product
+        const { error } = await supabase
+          .from("products")
+          .update({
+            name: formData.name,
+            price: parseFloat(formData.price),
+            description: formData.description,
+            image: formData.image,
+          })
+          .eq("id", parseInt(editingId));
+
+        if (error) throw error;
+      } else {
+        // Add new product
+        const { error } = await supabase
+          .from("products")
+          .insert([{
+            name: formData.name,
+            price: parseFloat(formData.price),
+            description: formData.description,
+            image: formData.image,
+          }]);
+
+        if (error) throw error;
+      }
+
+      // Reload products
+      await loadProducts();
+      setFormData({ name: "", price: "", description: "", image: "" });
+      setEditingId(null);
+    } catch (error) {
+      console.error("Error saving product:", error);
+      alert("Error saving product");
     }
 
-    setFormData({ name: "", price: "", description: "", image: "" });
-    setEditingId(null);
+    setLoading(false);
   };
 
   const handleEdit = (product: Product) => {
@@ -122,10 +117,24 @@ export default function Admin() {
     setEditingId(null);
   };
 
-  const handleDelete = (id: string) => {
-    const updated = products.filter((p) => p.id !== id);
-    setProducts(updated);
-    localStorage.setItem("products", JSON.stringify(updated));
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this product?")) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", parseInt(id));
+
+      if (error) throw error;
+
+      await loadProducts();
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      alert("Error deleting product");
+    }
+    setLoading(false);
   };
 
   return (
@@ -201,7 +210,7 @@ export default function Admin() {
                     onChange={(e) =>
                       setFormData({ ...formData, image: e.target.value })
                     }
-                    placeholder="https://blackmart-store.vercel.app/images/filename.jpg"
+                    placeholder="/images/filename.jpg"
                     className="w-full px-3 py-2 border border-emerald-500/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600 text-white bg-gray-950 placeholder-emerald-300/40 text-sm"
                   />
                   <p className="text-xs text-emerald-300/60 mt-2">
@@ -212,9 +221,10 @@ export default function Admin() {
                 <div className="space-y-2">
                   <button
                     type="submit"
-                    className="w-full bg-emerald-600 text-white py-2 rounded-lg font-semibold hover:bg-emerald-700 transition-colors"
+                    disabled={loading}
+                    className="w-full bg-emerald-600 text-white py-2 rounded-lg font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50"
                   >
-                    {editingId ? "Update Product" : "Add Product"}
+                    {loading ? "Saving..." : editingId ? "Update Product" : "Add Product"}
                   </button>
                   {editingId && (
                     <button
@@ -266,13 +276,15 @@ export default function Admin() {
                   <div className="flex gap-2 flex-shrink-0">
                     <button
                       onClick={() => handleEdit(product)}
-                      className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                      disabled={loading}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(product.id)}
-                      className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
+                      disabled={loading}
+                      className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors disabled:opacity-50"
                     >
                       Delete
                     </button>
