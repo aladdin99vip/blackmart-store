@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useAdmin } from "@/lib/AdminContext";
 
 interface Product {
   id: string;
@@ -13,6 +15,8 @@ interface Product {
 }
 
 export default function Admin() {
+  const { admin, loading: adminLoading, isSuper, logout } = useAdmin();
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [formData, setFormData] = useState({
     name: "",
@@ -23,9 +27,24 @@ export default function Admin() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Gate: must be logged in as an admin
   useEffect(() => {
-    loadProducts();
-  }, []);
+    if (!adminLoading && !admin) {
+      router.replace("/admin/login");
+    }
+  }, [adminLoading, admin, router]);
+
+  useEffect(() => {
+    if (admin) loadProducts();
+  }, [admin]);
+
+  if (adminLoading || !admin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-800 to-emerald-700 flex items-center justify-center">
+        <p className="text-emerald-200">Loading...</p>
+      </div>
+    );
+  }
 
   const loadProducts = async () => {
     try {
@@ -142,9 +161,28 @@ export default function Admin() {
       <header className="border-b border-emerald-500/30 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center">
           <h1 className="text-3xl font-bold text-white">Store Admin</h1>
-          <Link href="/" className="text-emerald-200 hover:text-emerald-100 transition-colors">
-            Back to Store
-          </Link>
+          <div className="flex gap-4 items-center">
+            <span className="text-emerald-200/70 text-sm capitalize hidden sm:inline">
+              {admin.name} ({admin.role})
+            </span>
+            <Link href="/admin/orders" className="text-emerald-200 hover:text-emerald-100 text-sm transition-colors">
+              Orders
+            </Link>
+            {isSuper && (
+              <Link href="/admin/manage" className="text-emerald-200 hover:text-emerald-100 text-sm transition-colors">
+                Manage Admins
+              </Link>
+            )}
+            <button
+              onClick={async () => {
+                await logout();
+                router.replace("/admin/login");
+              }}
+              className="text-emerald-200 hover:text-emerald-100 text-sm transition-colors"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
