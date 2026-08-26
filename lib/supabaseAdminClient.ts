@@ -8,7 +8,7 @@ const supabaseUrl =
   "https://grfajbnfzdwgxpxcdpsc.supabase.co";
 const supabaseAnonKey =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "sb_pub…njFz";
+  "sb_publishable_z-4IJevaYZ_STKZvgTRkYQ_PFimnjFz";
 
 export const supabaseAdminAuth = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

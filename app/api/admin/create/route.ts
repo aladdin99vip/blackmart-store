@@ -7,7 +7,7 @@ const url =
   "https://grfajbnfzdwgxpxcdpsc.supabase.co";
 const anonKey =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "sb_pub…njFz";
+  "sb_publishable_z-4IJevaYZ_STKZvgTRkYQ_PFimnjFz";
 
 // Only a super-admin may create new admin accounts.
 export async function POST(req: NextRequest) {
