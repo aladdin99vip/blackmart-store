@@ -29,18 +29,24 @@ export default function Admin() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Products are managed by super + inventory. Shipping admins get bounced to orders.
+  const canManageProducts = admin && (admin.role === "super" || admin.role === "inventory");
+
   // Gate: must be logged in as an admin
   useEffect(() => {
     if (!adminLoading && !admin) {
       router.replace("/admin/login");
+    } else if (!adminLoading && admin && admin.role === "shipping") {
+      // Shipping staff don't manage products — send them to orders.
+      router.replace("/admin/orders");
     }
   }, [adminLoading, admin, router]);
 
   useEffect(() => {
-    if (admin) loadProducts();
-  }, [admin]);
+    if (canManageProducts) loadProducts();
+  }, [canManageProducts]);
 
-  if (adminLoading || !admin) {
+  if (adminLoading || !admin || !canManageProducts) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-800 to-emerald-700 flex items-center justify-center">
         <p className="text-emerald-200">Loading...</p>
@@ -171,9 +177,11 @@ export default function Admin() {
             <span className="text-emerald-200/70 text-sm capitalize hidden sm:inline">
               {admin.name} ({admin.role})
             </span>
-            <Link href="/admin/orders" className="text-emerald-200 hover:text-emerald-100 text-sm transition-colors">
-              Orders
-            </Link>
+            {(admin.role === "super" || admin.role === "shipping") && (
+              <Link href="/admin/orders" className="text-emerald-200 hover:text-emerald-100 text-sm transition-colors">
+                Orders
+              </Link>
+            )}
             {isSuper && (
               <Link href="/admin/manage" className="text-emerald-200 hover:text-emerald-100 text-sm transition-colors">
                 Manage Admins
