@@ -12,6 +12,7 @@ interface Product {
   price: number;
   image: string;
   description: string;
+  stock: number;
 }
 
 export default function Admin() {
@@ -23,6 +24,7 @@ export default function Admin() {
     price: "",
     description: "",
     image: "",
+    stock: "",
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -62,6 +64,7 @@ export default function Admin() {
           price: p.price,
           image: p.image || "",
           description: p.description || "",
+          stock: p.stock ?? 0,
         }));
         setProducts(formatted);
       }
@@ -75,8 +78,8 @@ export default function Admin() {
     e.preventDefault();
     setLoading(true);
 
-    if (!formData.name || !formData.price || !formData.description || !formData.image) {
-      alert("Please fill in all fields including image URL");
+    if (!formData.name || !formData.price || !formData.description || !formData.image || formData.stock === "") {
+      alert("Please fill in all fields including image URL and stock");
       setLoading(false);
       return;
     }
@@ -91,6 +94,7 @@ export default function Admin() {
             price: parseFloat(formData.price),
             description: formData.description,
             image: formData.image,
+            stock: parseInt(formData.stock),
           })
           .eq("id", parseInt(editingId));
 
@@ -104,6 +108,7 @@ export default function Admin() {
             price: parseFloat(formData.price),
             description: formData.description,
             image: formData.image,
+            stock: parseInt(formData.stock),
           }]);
 
         if (error) throw error;
@@ -111,7 +116,7 @@ export default function Admin() {
 
       // Reload products
       await loadProducts();
-      setFormData({ name: "", price: "", description: "", image: "" });
+      setFormData({ name: "", price: "", description: "", image: "", stock: "" });
       setEditingId(null);
     } catch (error) {
       console.error("Error saving product:", error);
@@ -127,12 +132,13 @@ export default function Admin() {
       price: product.price.toString(),
       description: product.description,
       image: product.image,
+      stock: product.stock.toString(),
     });
     setEditingId(product.id);
   };
 
   const handleCancel = () => {
-    setFormData({ name: "", price: "", description: "", image: "" });
+    setFormData({ name: "", price: "", description: "", image: "", stock: "" });
     setEditingId(null);
   };
 
@@ -256,6 +262,21 @@ export default function Admin() {
                   </p>
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-emerald-200 mb-2">
+                    Stock (units available)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.stock}
+                    onChange={(e) =>
+                      setFormData({ ...formData, stock: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-emerald-500/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600 text-white bg-gray-950 placeholder-emerald-300/40"
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <button
                     type="submit"
@@ -308,7 +329,20 @@ export default function Admin() {
                     <p className="text-sm text-emerald-100/70 mb-2">
                       ${product.price.toFixed(2)}
                     </p>
-                    <p className="text-sm text-emerald-100/70">{product.description}</p>
+                    <p className="text-sm text-emerald-100/70 mb-2">{product.description}</p>
+                    <span
+                      className={`inline-block text-xs font-semibold px-2 py-1 rounded ${
+                        product.stock <= 0
+                          ? "bg-red-900/50 text-red-200"
+                          : product.stock <= 10
+                          ? "bg-yellow-900/50 text-yellow-200"
+                          : "bg-emerald-900/50 text-emerald-200"
+                      }`}
+                    >
+                      {product.stock <= 0
+                        ? "Out of stock"
+                        : `Stock: ${product.stock}`}
+                    </span>
                   </div>
 
                   <div className="flex gap-2 flex-shrink-0">
