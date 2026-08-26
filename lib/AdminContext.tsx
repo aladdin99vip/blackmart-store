@@ -6,7 +6,7 @@ import React, {
   useState,
   useEffect,
 } from "react";
-import { supabase } from "./supabase";
+import { supabaseAdminAuth as supabase } from "./supabaseAdminClient";
 import type { Session } from "@supabase/supabase-js";
 
 export type AdminRole = "super" | "inventory" | "shipping";

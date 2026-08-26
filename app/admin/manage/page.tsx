@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdminAuth as supabase } from "@/lib/supabaseAdminClient";
 import { useAdmin, type AdminRole } from "@/lib/AdminContext";
 
 interface AdminRow {
