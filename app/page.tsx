@@ -53,6 +53,9 @@ export default function Home() {
             <Link href="/orders" className="text-emerald-200 hover:text-emerald-100 text-sm transition-colors">
               My Orders
             </Link>
+            <Link href="/admin/login" className="text-emerald-200/60 hover:text-emerald-100 text-sm transition-colors">
+              Admin
+            </Link>
             <button
               onClick={async () => {
                 await logout();
